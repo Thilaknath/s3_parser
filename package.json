@@ -1,0 +1,17 @@
+{
+  "name": "coveo_trial",
+  "version": "1.0.0",
+  "description": "Project to Fetch S3 Buckets",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "AWS",
+    "S3",
+    "test",
+    "parser"
+  ],
+  "author": "Thilaknath Ashok Kumar",
+  "license": "ISC"
+}
