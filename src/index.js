@@ -1,5 +1,6 @@
 const aws = require('aws-sdk')
 const s3 = new aws.S3();
+const awsCost = new aws.CostExplorer();
 const config = require('../config/env.json')
 
 async function getBucketObjects(bucketName) {
@@ -19,11 +20,9 @@ async function getBucketLocation(bucketName) {
 }
 
 function getBucketCreationDate(allBucketObject, bucketName){
-    let filteredBucket = allBucketObject.Buckets.filter(function(bucket){
+    return allBucketObject.Buckets.filter(function(bucket){
         return bucket.Name == bucketName
-    })
-
-    return filteredBucket[0].CreationDate
+    })[0].CreationDate
 }
 
 function calculateFileSize(bucketContents, storageClass){
@@ -36,6 +35,16 @@ function calculateFileSize(bucketContents, storageClass){
 
     let totalBucketSize = arr => arr.reduce((a,b) => a + b, 0)
     return formatBytes(totalBucketSize(objectSizeArray), 2) 
+}
+
+function calculateNoOfFiles(bucketContents, storageClass) {
+    let filteredBucketObjects = filterStorageClass(bucketContents, storageClass)
+
+    if(filteredBucketObjects == 0){
+        return 0
+    }else{
+        return filteredBucketObjects.length
+    }
 }
 
 function filterStorageClass(objects, storageClass){
@@ -89,11 +98,12 @@ function getBucketInformation(bucketName, storageClass) {
         getBucketObjects(bucketName),
         getBucketLocation(bucketName)
     ]).then((res) => {
+
         console.log({
             name: bucketName,
             region: res[2].LocationConstraint,
             creationDate: getBucketCreationDate(res[0], bucketName),
-            numberOfFiles: mostRecentFile(res[1], storageClass).length,
+            numberOfFiles: calculateNoOfFiles(res[1], storageClass),
             totalFileSize: calculateFileSize(res[1], storageClass),
             lastModifiedDate: mostRecentFile(res[1], storageClass)[0].LastModified,
             lastModifiedFile: mostRecentFile(res[1], storageClass)[0].Key
@@ -101,5 +111,6 @@ function getBucketInformation(bucketName, storageClass) {
     })
 }
 
-getBucketInformation('coveotest2', 'INTELLIGENT_TIERING')
-//getBucketInformation('coveotest1', 'INTELLIGENT_TIERING')
+// getBucketInformation('coveotest2', 'INTELLIGENT_TIERING')
+// getBucketInformation('coveotest1', 'STANDARD')
+getBucketInformation('coveotest1', 'STANDARD')
