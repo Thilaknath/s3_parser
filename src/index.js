@@ -1,4 +1,6 @@
 const aws = require('aws-sdk')
+aws.config.update({ region: 'us-east-1' });
+
 const s3 = new aws.S3();
 const awsCost = new aws.CostExplorer();
 const config = require('../config/env.json')
@@ -16,6 +18,36 @@ async function getAllBucketInformation() {
 async function getBucketLocation(bucketName) {
     return await s3.getBucketLocation({
         Bucket: bucketName
+    }).promise();
+}
+
+async function getAWSCost(bucketName) {
+    return await awsCost.getCostAndUsage({
+        Filter: { 
+            Dimensions: { 
+                Key: "SERVICE",
+                Values: [
+                    "Amazon Simple Storage Service"
+                ]
+            }
+         },
+        Granularity: "MONTHLY",
+        GroupBy: [
+        {
+            Key: "SERVICE",
+            Type: "DIMENSION"
+        },
+        {
+            Key: "costCentre",
+            Type: "TAG"
+        }
+    ],
+        TimePeriod: {
+        End: "2019-11-02",
+        Start: "2019-10-20"
+    },
+        Metrics: ["BlendedCost", "UnblendedCost", "UsageQuantity"],
+
     }).promise();
 }
 
