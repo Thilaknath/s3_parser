@@ -11,6 +11,10 @@ For each bucket:
 - Last modified date of the most recent file
 - Last modified file 
 
+Parameters
+- b [bucketName] (coveotest1, coveotest2, coveotest3, coveotest4)
+- t [storageType] (STANDARD, INTELLIGENT_TIERING)
+
 ***
 
     $ node ./index.js -b coveotest1 -t INTELLIGENT_TIERING
