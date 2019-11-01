@@ -12,6 +12,12 @@ async function getAllBucketInformation() {
     return await s3.listBuckets().promise();
 }
 
+async function getBucketLocation(bucketName) {
+    return await s3.getBucketLocation({
+        Bucket: bucketName
+    }).promise();
+}
+
 function getBucketCreationDate(allBucketObject, bucketName){
     let filteredBucket = allBucketObject.Buckets.filter(function(bucket){
         return bucket.Name == bucketName
@@ -40,17 +46,27 @@ function filterStorageClass(objects, storageClass){
     return filteredObjects
 }
 
-function mostRecentFileDate(bucketContents, storageClass) {
-    let filteredBucketObjects = filterStorageClass(bucketContents, storageClass)
+function mostRecentFile(bucketContents, storageClass) {
 
-    if(filteredBucketObjects.length < 1){
-        return filteredBucketObjects
-    }else {
-        return filteredBucketObjects.sort((x, y) => {
-            let date1 = new Date(x.LastModified);
-            let date2 = new Date(y.LastModified);
-            return date2 - date1;
-        })
+    try {
+        let filteredBucketObjects = filterStorageClass(bucketContents, storageClass)
+
+        if (filteredBucketObjects.length == 0) {
+            return [{
+                LastModified: "NO DATA",
+                Key: "NO DATA"
+            }]
+        } else if (filteredBucketObjects.length < 1) {
+            return filteredBucketObjects
+        } else {
+            return filteredBucketObjects.sort((x, y) => {
+                let date1 = new Date(x.LastModified);
+                let date2 = new Date(y.LastModified);
+                return date2 - date1;
+            })
+        }
+    } catch (exception) {
+        console.log('Most Recent File Exception', exception)
     }
 
 }
@@ -66,3 +82,24 @@ function formatBytes(bytes, decimals = 2) {
 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+function getBucketInformation(bucketName, storageClass) {
+    Promise.all([
+        getAllBucketInformation(),
+        getBucketObjects(bucketName),
+        getBucketLocation(bucketName)
+    ]).then((res) => {
+        console.log({
+            name: bucketName,
+            region: res[2].LocationConstraint,
+            creationDate: getBucketCreationDate(res[0], bucketName),
+            numberOfFiles: mostRecentFile(res[1], storageClass).length,
+            totalFileSize: calculateFileSize(res[1], storageClass),
+            lastModifiedDate: mostRecentFile(res[1], storageClass)[0].LastModified,
+            lastModifiedFile: mostRecentFile(res[1], storageClass)[0].Key
+        })
+    })
+}
+
+getBucketInformation('coveotest2', 'INTELLIGENT_TIERING')
+//getBucketInformation('coveotest1', 'INTELLIGENT_TIERING')
