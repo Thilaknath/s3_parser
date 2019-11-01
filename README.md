@@ -13,7 +13,7 @@ For each bucket:
 
 Parameters
 - b [bucketName] (coveotest1, coveotest2, coveotest3, coveotest4)
-- t [storageType] (STANDARD, INTELLIGENT_TIERING)
+- t [storageType] (STANDARD, INTELLIGENT_TIERING, REDUCED_REDUNDANCY)
 
 ***
 
