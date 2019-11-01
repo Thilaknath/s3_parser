@@ -5,6 +5,11 @@ const s3 = new aws.S3();
 const awsCost = new aws.CostExplorer();
 const config = require('../config/env.json')
 
+const argv = require('yargs')
+    .usage('Usage: $0 -b -t [string] [string]')
+    .demandOption(['b', 't'])
+    .argv;
+
 async function getBucketObjects(bucketName) {
     return await s3.listObjectsV2({
         Bucket: bucketName

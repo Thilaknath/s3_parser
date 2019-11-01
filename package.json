@@ -15,6 +15,7 @@
   "author": "Thilaknath Ashok Kumar",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.556.0"
+    "aws-sdk": "^2.556.0",
+    "yargs": "^14.2.0"
   }
 }
