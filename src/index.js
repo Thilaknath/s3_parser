@@ -11,3 +11,22 @@ async function getBucketObjects(bucketName) {
 async function getAllBucketInformation() {
     return await s3.listBuckets().promise();
 }
+
+function getBucketCreationDate(allBucketObject, bucketName){
+    let filteredBucket = allBucketObject.Buckets.filter(function(bucket){
+        return bucket.Name == bucketName
+    })
+
+    return filteredBucket[0].CreationDate
+}
+
+function calculateFileSize(bucketContents, unit){
+    let objectSizeArray = []
+
+    bucketContents.Contents.forEach((bucket) => {
+        objectSizeArray.push(bucket.Size)
+    })
+
+    let totalBucketSize = arr => arr.reduce((a,b) => a + b, 0)
+    return formatBytes(totalBucketSize(objectSizeArray), 2) 
+}
