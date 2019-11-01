@@ -13,5 +13,8 @@
     "parser"
   ],
   "author": "Thilaknath Ashok Kumar",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.556.0"
+  }
 }
