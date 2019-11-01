@@ -20,13 +20,22 @@ function getBucketCreationDate(allBucketObject, bucketName){
     return filteredBucket[0].CreationDate
 }
 
-function calculateFileSize(bucketContents, unit){
+function calculateFileSize(bucketContents, storageClass){
     let objectSizeArray = []
+    let filteredBucketObjects = filterStorageClass(bucketContents, storageClass)
 
-    bucketContents.Contents.forEach((bucket) => {
-        objectSizeArray.push(bucket.Size)
+    filteredBucketObjects.forEach((bucket) => {
+            objectSizeArray.push(bucket.Size)
     })
 
     let totalBucketSize = arr => arr.reduce((a,b) => a + b, 0)
     return formatBytes(totalBucketSize(objectSizeArray), 2) 
+}
+
+function filterStorageClass(objects, storageClass){
+    let filteredObjects = objects.Contents.filter(function(object){
+        return object.StorageClass == storageClass
+    })
+
+    return filteredObjects
 }
