@@ -54,7 +54,7 @@ async function getAWSCost() {
             }
         ],
         TimePeriod: {
-            End: "2019-11-02",
+            End: "2019-11-30",
             Start: "2019-10-20"
         },
         Metrics: ["BlendedCost", "UnblendedCost", "UsageQuantity"],
@@ -177,15 +177,29 @@ function getBucketInformation(bucketName, storageClass) {
         let bucketLocation = res[2]
         let bucketTags = res[3]
         let bucketCostInfo = res[4]
+        let creationDate
+        let fileLastModifiedDate
+
+        if (typeof getBucketCreationDate(bucketInfo, bucketName) === "object") {
+            creationDate = getBucketCreationDate(bucketInfo, bucketName).toLocaleDateString("en-US")
+        }else{
+            creationDate = "NO DATA"
+        }
+
+        if (typeof mostRecentFile(bucketObjectInfo, storageClass)[0].LastModified === "object") {
+            fileLastModifiedDate = mostRecentFile(bucketObjectInfo, storageClass)[0].LastModified.toLocaleDateString("en-US")
+        }else{
+            fileLastModifiedDate = "NO DATA"
+        }
 
         console.table({
             name: bucketName,
             region: bucketLocation.LocationConstraint,
             storageType: storageClass,
-            creationDate: getBucketCreationDate(bucketInfo, bucketName).toLocaleDateString("en-US"),
+            bucketCreationDate: creationDate,
             numberOfFiles: calculateNoOfFiles(bucketObjectInfo, storageClass),
             totalFileSize: calculateFileSize(bucketObjectInfo, storageClass),
-            lastModifiedDate: mostRecentFile(bucketObjectInfo, storageClass)[0].LastModified.toLocaleDateString("en-US"),
+            lastModifiedDate: fileLastModifiedDate,
             lastModifiedFile: mostRecentFile(bucketObjectInfo, storageClass)[0].Key,
             bucketCost: calculateBucketCost(bucketCostInfo, bucketTags)
         })
