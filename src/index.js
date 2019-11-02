@@ -151,3 +151,4 @@ function getBucketInformation(bucketName, storageClass) {
 // getBucketInformation('coveotest2', 'INTELLIGENT_TIERING')
 // getBucketInformation('coveotest1', 'STANDARD')
 getBucketInformation('coveotest4', 'INTELLIGENT_TIERING')
+getBucketInformation(argv.b, argv.t)
