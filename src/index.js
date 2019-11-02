@@ -26,66 +26,71 @@ async function getBucketLocation(bucketName) {
     }).promise();
 }
 
-async function getAWSCost(bucketName) {
+async function getBucketTags(bucketName) {
+    return await s3.getBucketTagging({
+        Bucket: bucketName
+    }).promise();
+}
+
+async function getAWSCost() {
     return await awsCost.getCostAndUsage({
-        Filter: { 
-            Dimensions: { 
+        Filter: {
+            Dimensions: {
                 Key: "SERVICE",
                 Values: [
                     "Amazon Simple Storage Service"
                 ]
             }
-         },
+        },
         Granularity: "MONTHLY",
         GroupBy: [
-        {
-            Key: "SERVICE",
-            Type: "DIMENSION"
-        },
-        {
-            Key: "costCentre",
-            Type: "TAG"
-        }
-    ],
+            {
+                Key: "SERVICE",
+                Type: "DIMENSION"
+            },
+            {
+                Key: "costCentre",
+                Type: "TAG"
+            }
+        ],
         TimePeriod: {
-        End: "2019-11-02",
-        Start: "2019-10-20"
-    },
+            End: "2019-11-02",
+            Start: "2019-10-20"
+        },
         Metrics: ["BlendedCost", "UnblendedCost", "UsageQuantity"],
 
     }).promise();
 }
 
-function getBucketCreationDate(allBucketObject, bucketName){
-    return allBucketObject.Buckets.filter(function(bucket){
+function getBucketCreationDate(allBucketObject, bucketName) {
+    return allBucketObject.Buckets.filter(function (bucket) {
         return bucket.Name == bucketName
     })[0].CreationDate
 }
 
-function calculateFileSize(bucketContents, storageClass){
+function calculateFileSize(bucketContents, storageClass) {
     let objectSizeArray = []
     let filteredBucketObjects = filterStorageClass(bucketContents, storageClass)
 
     filteredBucketObjects.forEach((bucket) => {
-            objectSizeArray.push(bucket.Size)
+        objectSizeArray.push(bucket.Size)
     })
 
-    let totalBucketSize = arr => arr.reduce((a,b) => a + b, 0)
-    return formatBytes(totalBucketSize(objectSizeArray), 2) 
+    let totalBucketSize = arr => arr.reduce((a, b) => a + b, 0)
+    return formatBytes(totalBucketSize(objectSizeArray), 2)
 }
 
 function calculateNoOfFiles(bucketContents, storageClass) {
     let filteredBucketObjects = filterStorageClass(bucketContents, storageClass)
 
-    if(filteredBucketObjects == 0){
+    if (filteredBucketObjects == 0)
         return 0
-    }else{
-        return filteredBucketObjects.length
-    }
+
+    return filteredBucketObjects.length
 }
 
-function filterStorageClass(objects, storageClass){
-    let filteredObjects = objects.Contents.filter(function(object){
+function filterStorageClass(objects, storageClass) {
+    let filteredObjects = objects.Contents.filter(function (object) {
         return object.StorageClass == storageClass
     })
 
@@ -117,6 +122,14 @@ function mostRecentFile(bucketContents, storageClass) {
 
 }
 
+function getTags(bucketTags) {
+    let tagSetArray = []
+    bucketTags.TagSet.forEach((tag) => {
+        tagSetArray.push(`${tag.Key}$${tag.Value}`)
+    })
+    return tagSetArray
+}
+
 function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return '0 Bytes';
 
@@ -129,26 +142,54 @@ function formatBytes(bytes, decimals = 2) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
+function calculateBucketCost(groupObject, bucketTags) {
+
+    let tagSetArray = getTags(bucketTags)
+    let amount = 0
+
+    if (groupObject.ResultsByTime.length > 0) {
+        groupObject.ResultsByTime.forEach((result) => {
+            if (result.Groups.length > 0) {
+                result.Groups.map(x => {
+                    let keyValue = x.Keys.find(i => i.includes('$'))
+                    if (tagSetArray.includes(keyValue)) {
+                        amount += parseFloat(x.Metrics.BlendedCost.Amount);
+                    }
+                })
+            }
+        })
+    }
+
+    return amount
+}
+
 function getBucketInformation(bucketName, storageClass) {
     Promise.all([
         getAllBucketInformation(),
         getBucketObjects(bucketName),
-        getBucketLocation(bucketName)
+        getBucketLocation(bucketName),
+        getBucketTags(bucketName),
+        getAWSCost()
     ]).then((res) => {
 
-        console.log({
+        let bucketInfo = res[0]
+        let bucketObjectInfo = res[1]
+        let bucketLocation = res[2]
+        let bucketTags = res[3]
+        let bucketCostInfo = res[4]
+
+        console.table({
             name: bucketName,
-            region: res[2].LocationConstraint,
-            creationDate: getBucketCreationDate(res[0], bucketName),
-            numberOfFiles: calculateNoOfFiles(res[1], storageClass),
-            totalFileSize: calculateFileSize(res[1], storageClass),
-            lastModifiedDate: mostRecentFile(res[1], storageClass)[0].LastModified,
-            lastModifiedFile: mostRecentFile(res[1], storageClass)[0].Key
+            region: bucketLocation.LocationConstraint,
+            storageType: storageClass,
+            creationDate: getBucketCreationDate(bucketInfo, bucketName).toLocaleDateString("en-US"),
+            numberOfFiles: calculateNoOfFiles(bucketObjectInfo, storageClass),
+            totalFileSize: calculateFileSize(bucketObjectInfo, storageClass),
+            lastModifiedDate: mostRecentFile(bucketObjectInfo, storageClass)[0].LastModified.toLocaleDateString("en-US"),
+            lastModifiedFile: mostRecentFile(bucketObjectInfo, storageClass)[0].Key,
+            bucketCost: calculateBucketCost(bucketCostInfo, bucketTags)
         })
     })
 }
 
-// getBucketInformation('coveotest2', 'INTELLIGENT_TIERING')
-// getBucketInformation('coveotest1', 'STANDARD')
-getBucketInformation('coveotest4', 'INTELLIGENT_TIERING')
 getBucketInformation(argv.b, argv.t)
