@@ -5,10 +5,10 @@ const s3 = new aws.S3();
 const awsCost = new aws.CostExplorer();
 const config = require('../config/env.json')
 
-const argv = require('yargs')
-    .usage('Usage: $0 -b -t [string] [string]')
-    .demandOption(['b', 't'])
-    .argv;
+// const argv = require('yargs')
+//     .usage('Usage: $0 -b -t [string] [string]')
+//     .demandOption(['b', 't'])
+//     .argv;
 
 async function getBucketObjects(bucketName) {
     return await s3.listObjectsV2({
@@ -21,9 +21,13 @@ async function getAllBucketInformation() {
 }
 
 async function getBucketLocation(bucketName) {
-    return await s3.getBucketLocation({
-        Bucket: bucketName
-    }).promise();
+    try{
+        return await s3.getBucketLocation({
+            Bucket: bucketName
+        }).promise();
+    }catch(exception){
+        console.log(exception)
+    }
 }
 
 async function getBucketTags(bucketName) {
@@ -171,7 +175,6 @@ function getBucketInformation(bucketName, storageClass) {
         getBucketTags(bucketName),
         getAWSCost()
     ]).then((res) => {
-
         let bucketInfo = res[0]
         let bucketObjectInfo = res[1]
         let bucketLocation = res[2]
@@ -203,7 +206,28 @@ function getBucketInformation(bucketName, storageClass) {
             lastModifiedFile: mostRecentFile(bucketObjectInfo, storageClass)[0].Key,
             bucketCost: calculateBucketCost(bucketCostInfo, bucketTags)
         })
+
+    }).catch((err) => {
+        console.log("NO ACCESS", err)
     })
 }
 
-getBucketInformation(argv.b, argv.t)
+function getTotalBuckets(){  
+    try{
+        getAllBucketInformation().then((res)=> {
+            // console.log(res)
+    
+            res.Buckets.forEach((bucket) => {
+                getBucketInformation(bucket.Name, "STANDARD")
+            })
+        }).catch((err) => {
+            console.log(err)
+        })
+    }catch(exception){
+        console.log(exception)
+    }
+
+}
+
+getTotalBuckets()
+// getBucketInformation(argv.b, argv.t)
